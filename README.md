@@ -16,9 +16,9 @@ the options are :
 -a int
     number of bytes to be read starting from the target string (default 8)
 -B string
-    output format for the bytes that come before the target string: hex or char (default hex)
+    output format for the bytes that come before the target string: hex or char or mixed (default hex)
 -A string
-    output format for the bytes that start from the target string: hex or char (default hex)
+    output format for the bytes that start from the target string: hex or char or mixed (default hex)
 -O string
     output format for the offset of each occurrence: hex or decimal (default hex)
 -order string
@@ -47,22 +47,27 @@ byteinspect/binspect: 00051ecd
 byteinspect/binspect: 0005ac35
 \x01\x07\x8bi\x01}\xd3\xeahi\xf8J\x05\x00\x91\xea
 ```
-so, binspect displays all output as hex by default , and has different output modes for the before and after bytes:
+so, binspect displays all output as hex by default,
 ```
 $ ./binspect -file ./binspect -target "hi" -b 8 -a 8
 00 80 39 09 FD 63 D3 C6 0001B735        68 69 38 09 89 60 D3 EA
 03 00 F9 E9 1B 40 F9 CB 00051ECD        68 69 F8 2B 07 00 F9 C8
 01 07 8B 69 01 7D D3 EA 0005AC35        68 69 F8 4A 05 00 91 EA
 ```
-
+and lets u choose how u want the bytes to be displayed:
 ```
 $ ./binspect -file ./binspect -target "hi" -b 8 -a 8 -B hex -A char
 00 80 39 09 FD 63 D3 C6 0001B735        hi8..`..
 03 00 F9 E9 1B 40 F9 CB 00051ECD        hi.+....
 01 07 8B 69 01 7D D3 EA 0005AC35        hi.J....
 ```
-
-
+output mode `mixed` will give a similar result to bgrep:
+```
+$ ./binspect -file ./binspect -target "hi" -B mixed -A mixed
+\x00\x809\x09\xFDc\xD3\xC6      0001B735        hi8\x09\x89`\xD3\xEA
+\x03\x00\xF9\xE9\x1B@\xF9\xCB   00051ECD        hi\xF8+\x07\x00\xF9\xC8
+\x01\x07\x8Bi\x01}\xD3\xEA      0005AC35        hi\xF8J\x05\x00\x91\xEA
+```
 ### offset lists
 if u only want a list of all the offsets, bgrep lets u set the before/after bytes to 0:
 ```
@@ -79,7 +84,7 @@ $ ./binspect -file ./binspect -target "hi" -b 0 -a 0
 0005AC35
 ```
 
-### other output options
+### other options
 
 change the output mode for the offsets with `-O`
 ```
@@ -91,12 +96,18 @@ $ ./binspect -file ./binspect -target "hi" -O decimal
 
 control the order of each row by using `-order`
 ```
-$ ./binspect -file ./binspect -target "hi" -order oba
-0001B735        00 80 39 09 FD 63 D3 C6 68 69 38 09 89 60 D3 EA
-00051ECD        03 00 F9 E9 1B 40 F9 CB 68 69 F8 2B 07 00 F9 C8
-0005AC35        01 07 8B 69 01 7D D3 EA 68 69 F8 4A 05 00 91 EA
+$ ./binspect -file ./binspect -target "hi" -order bao
+00 80 39 09 FD 63 D3 C6 68 69 38 09 89 60 D3 EA0001B735
+03 00 F9 E9 1B 40 F9 CB 68 69 F8 2B 07 00 F9 C800051ECD
+01 07 8B 69 01 7D D3 EA 68 69 F8 4A 05 00 91 EA0005AC35
 ```
-
+combining all the options can give a completely different output
+```
+$ ./binspect -file ./binspect -target "hi" -B mixed -A mixed -O decimal -order oba 
+112437  \x00\x809\x09\xFDc\xD3\xC6      hi8\x09\x89`\xD3\xEA
+335565  \x03\x00\xF9\xE9\x1B@\xF9\xCB   hi\xF8+\x07\x00\xF9\xC8
+371765  \x01\x07\x8Bi\x01}\xD3\xEA      hi\xF8J\x05\x00\x91\xEA
+```
 ## install
 needs go to build
 
