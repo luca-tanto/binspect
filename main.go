@@ -81,7 +81,7 @@ func readBytesAfter(data []byte, offset, n int) []byte {
 
 func main() {
 	inputFile := flag.String("infile", "", "path to the input file")
-	targetString := flag.String("target", "", "target string to search for in the input file")
+	targetString := flag.String("string", "", "target string to search for in the input file")
 	before := flag.Int("before", 8, "number of bytes to read before each offset")
 	beforeFormat := flag.String("beforeFormat", "hex", "format of bytes before each offset: hex or char")
 	after := flag.Int("after", 16, "number of bytes to read after each offset")
