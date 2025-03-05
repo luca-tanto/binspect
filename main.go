@@ -61,6 +61,20 @@ func formatBytesToChar(b []byte) string {
 	return result
 }
 
+// formatBytesToMixed returns a string with each byte formatted as ASCII if it's printable,
+// or as a \x delimited hex value if it isn't.
+func formatBytesToMixed(b []byte) string {
+	var sb strings.Builder
+	for _, v := range b {
+		if v >= 32 && v <= 126 {
+			sb.WriteByte(v)
+		} else {
+			sb.WriteString(fmt.Sprintf("\\x%02X", v))
+		}
+	}
+	return sb.String()
+}
+
 // readBytesBefore returns the n bytes that precede the given offset.
 func readBytesBefore(data []byte, offset, n int) []byte {
 	start := offset - n
@@ -80,12 +94,14 @@ func readBytesAfter(data []byte, offset, n int) []byte {
 }
 
 func main() {
-	inputFile := flag.String("infile", "", "path to the input file")
-	targetString := flag.String("string", "", "target string to search for in the input file")
-	before := flag.Int("before", 8, "number of bytes to read before each offset")
-	beforeFormat := flag.String("beforeFormat", "hex", "format of bytes before each offset: hex or char")
-	after := flag.Int("after", 16, "number of bytes to read after each offset")
-	afterFormat := flag.String("afterFormat", "hex", "format of bytes after each offset: hex or char")
+	inputFile := flag.String("file", "", "path to the input file")
+	targetString := flag.String("target", "", "target string to search for in the input file")
+	before := flag.Int("b", 8, "number of bytes to read before each offset")
+	beforeFormat := flag.String("B", "hex", "format of the bytes before: hex or char or mixed")
+	after := flag.Int("a", 8, "number of bytes to read after each offset")
+	afterFormat := flag.String("A", "hex", "format of the bytes after: hex or char or mixed")
+	offsetFormat := flag.String("O", "hex", "format of the offsets: hex or decimal")
+	order := flag.String("order", "boa", "order of each row: any permutation of the chars 'boa'")
 	flag.Parse()
 
 	if *inputFile == "" || *targetString == "" {
@@ -104,12 +120,16 @@ func main() {
 
 	var inspectionLines []string
 	for _, offset := range offsets {
+
 		var beforeStr string
 		if *before > 0 {
 			precedingData := readBytesBefore(data, offset, *before)
-			if *beforeFormat == "char" {
+			switch *beforeFormat {
+			case "char":
 				beforeStr = formatBytesToChar(precedingData)
-			} else {
+			case "mixed":
+				beforeStr = formatBytesToMixed(precedingData)
+			default:
 				beforeStr = formatBytesToHex(precedingData)
 			}
 			beforeStr += "\t"
@@ -118,18 +138,41 @@ func main() {
 		var afterStr string
 		if *after > 0 {
 			followingData := readBytesAfter(data, offset, *after)
-			if *afterFormat == "char" {
+			switch *afterFormat {
+			case "char":
 				afterStr = formatBytesToChar(followingData)
-			} else {
+			case "mixed":
+				afterStr = formatBytesToMixed((followingData))
+			default:
 				afterStr = formatBytesToHex(followingData)
 			}
 		}
 
-		line := fmt.Sprintf("%s%08X\t%s", beforeStr, offset, afterStr)
+		var offsetStr string
+		if *offsetFormat == "decimal" {
+			offsetStr = fmt.Sprintf("%d", offset)
+		} else {
+			offsetStr = fmt.Sprintf("%08X", offset)
+		}
+		offsetStr += "\t"
+
+		var line string
+		switch *order {
+		case "bao":
+			line = fmt.Sprintf("%s%s%s", beforeStr, afterStr, offsetStr)
+		case "oba":
+			line = fmt.Sprintf("%s%s%s", offsetStr, beforeStr, afterStr)
+		case "oab":
+			line = fmt.Sprintf("%s%s%s", offsetStr, afterStr, beforeStr)
+		case "abo":
+			line = fmt.Sprintf("%s%s%s", afterStr, beforeStr, offsetStr)
+		case "aob":
+			line = fmt.Sprintf("%s%s%s", afterStr, offsetStr, beforeStr)
+		default:
+			line = fmt.Sprintf("%s%s%s", beforeStr, offsetStr, afterStr)
+		}
 		inspectionLines = append(inspectionLines, line)
 	}
-
-	// sort.Strings(inspectionLines)
 
 	for _, line := range inspectionLines {
 		fmt.Println(line)
