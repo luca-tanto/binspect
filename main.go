@@ -2,10 +2,11 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/spf13/pflag"
 )
 
 // getOffsets searches for all occurrences of target in data,
@@ -77,10 +78,7 @@ func formatBytesToMixed(b []byte) string {
 
 // readBytesBefore returns the n bytes that precede the given offset.
 func readBytesBefore(data []byte, offset, n int) []byte {
-	start := offset - n
-	if start < 0 {
-		start = 0
-	}
+	start := max(offset-n, 0)
 	return data[start:offset]
 }
 
@@ -94,19 +92,19 @@ func readBytesAfter(data []byte, offset, n int) []byte {
 }
 
 func main() {
-	inputFile := flag.String("file", "", "path to the input file")
-	targetString := flag.String("target", "", "target string to search for in the input file")
-	before := flag.Int("b", 8, "number of bytes to read before each offset")
-	beforeFormat := flag.String("B", "hex", "format of the bytes before: hex or char or mixed")
-	after := flag.Int("a", 8, "number of bytes to read after each offset")
-	afterFormat := flag.String("A", "hex", "format of the bytes after: hex or char or mixed")
-	offsetFormat := flag.String("O", "hex", "format of the offsets: hex or decimal")
-	order := flag.String("order", "boa", "order of each row: any permutation of the chars 'boa'")
-	flag.Parse()
+	inputFile := pflag.StringP("file", "f", "", "path to the input file")
+	targetString := pflag.StringP("target", "t", "", "target string to search for in the input file")
+	before := pflag.IntP("before", "b", 8, "number of bytes to read before each offset")
+	beforeFormat := pflag.StringP("before-format", "B", "hex", "format of the bytes before: hex or char or mixed")
+	after := pflag.IntP("after", "a", 8, "number of bytes to read after each offset")
+	afterFormat := pflag.StringP("after-format", "A", "hex", "format of the bytes after: hex or char or mixed")
+	offsetFormat := pflag.StringP("offset-format", "O", "hex", "format of the offsets: hex or decimal")
+	order := pflag.StringP("order", "o", "boa", "order of each row: any permutation of the chars 'boa'")
+	pflag.Parse()
 
 	if *inputFile == "" || *targetString == "" {
 		fmt.Println("usage: byteinspect -input <file> -target <string> [options]")
-		flag.PrintDefaults()
+		pflag.PrintDefaults()
 		os.Exit(1)
 	}
 
