@@ -43,12 +43,19 @@ $ binspect -i binspect -t "hi"
 03 00 F9 E9 1B 40 F9 CB 00051ECD        68 69 F8 2B 07 00 F9 C8
 01 07 8B 69 01 7D D3 EA 0005AC35        68 69 F8 4A 05 00 91 EA
 ```
-if you dont want hex, you can specify a different format for each column (`-B`, `-A`, `-O`):
+you can specify the format for each column with `-B`, `-A`, `-O`:
 ```
 $ binspect -i binspect -t "hi" -B hex -A char
 00 80 39 09 FD 63 D3 C6 0001B735        hi8..`..
 03 00 F9 E9 1B 40 F9 CB 00051ECD        hi.+....
 01 07 8B 69 01 7D D3 EA 0005AC35        hi.J....
+```
+and you can specify the format for all columns with `-f` or `--format`:
+```
+$ binspect -i binspect -t "hi" -f char
+..T.;..\n       ....    hi8.....
+..T.;..\n       ....    hi8.....
+......T(        ....    hi8.....
 ```
 output mode `mixed` will give a similar result to bgrep:
 ```
