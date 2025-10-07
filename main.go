@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"strings"
@@ -84,15 +85,18 @@ func readBytesBefore(data []byte, offset, n int) []byte {
 
 // readBytesAfter returns the n bytes that follow the given offset.
 func readBytesAfter(data []byte, offset, n int) []byte {
-	end := offset + n
-	if end > len(data) {
-		end = len(data)
-	}
+	end := min(offset+n, len(data))
 	return data[offset:end]
 }
 
+func offsetToBytes(offset int) []byte {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, uint32(offset))
+	return buf
+}
+
 func main() {
-	inputFile := pflag.StringP("file", "f", "", "path to the input file")
+	inputFile := pflag.StringP("infile", "i", "", "path to the input file")
 	targetString := pflag.StringP("target", "t", "", "target string to search for in the input file")
 	before := pflag.IntP("before", "b", 8, "number of bytes to read before each offset")
 	beforeFormat := pflag.StringP("before-format", "B", "hex", "format of the bytes before: hex or char or mixed")
@@ -100,10 +104,23 @@ func main() {
 	afterFormat := pflag.StringP("after-format", "A", "hex", "format of the bytes after: hex or char or mixed")
 	offsetFormat := pflag.StringP("offset-format", "O", "hex", "format of the offsets: hex or decimal")
 	order := pflag.StringP("order", "o", "boa", "order of each row: any permutation of the chars 'boa'")
+	format := pflag.StringP("format", "f", "hex", "format for all columns: hex or char or mixed")
 	pflag.Parse()
 
+	if *format != "" {
+		switch *format {
+		case "hex", "char", "mixed":
+			*beforeFormat = *format
+			*afterFormat = *format
+			*offsetFormat = *format
+		default:
+			fmt.Println("invalid value for --format: must be one of hex, char, mixed")
+			os.Exit(1)
+		}
+	}
+
 	if *inputFile == "" || *targetString == "" {
-		fmt.Println("usage: byteinspect -input <file> -target <string> [options]")
+		fmt.Println("usage: binspect -i <file> -t <string> [options]")
 		pflag.PrintDefaults()
 		os.Exit(1)
 	}
@@ -147,9 +164,14 @@ func main() {
 		}
 
 		var offsetStr string
-		if *offsetFormat == "decimal" {
+		switch *offsetFormat {
+		case "decimal":
 			offsetStr = fmt.Sprintf("%d", offset)
-		} else {
+		case "char":
+			offsetStr = formatBytesToChar(offsetToBytes(offset))
+		case "mixed":
+			offsetStr = formatBytesToMixed(offsetToBytes(offset))
+		default:
 			offsetStr = fmt.Sprintf("%08X", offset)
 		}
 		offsetStr += "\t"
